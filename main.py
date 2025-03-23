@@ -17,9 +17,33 @@ from pyfiglet import Figlet
 console = Console()
 
 # Model configuration
-MODEL_NAME = "llama2"
+MODEL_OPTIONS = {
+    "tinyllama": {
+        "name": "tinyllama",
+        "description": "TinyLlama (1.1B) - Very lightweight model, minimal resource usage"
+    },
+    "gemma:2b": {
+        "name": "gemma:2b",
+        "description": "Gemma 2B - Google's lightweight model, good performance/resource ratio"
+    },
+    "phi": {
+        "name": "phi",
+        "description": "Phi-2 (2.7B) - Microsoft's small but capable model"
+    },
+    "mistral": {
+        "name": "mistral",
+        "description": "Mistral (7B) - Good performance, moderate resource usage"
+    },
+    "llama2": {
+        "name": "llama2",
+        "description": "Llama 2 (7B) - Full-size model, high resource usage"
+    }
+}
+
+# Default settings
+DEFAULT_MODEL = "tinyllama"
 DEFAULT_TEMPERATURE = 0.7
-DEFAULT_CONTEXT_LENGTH = 4096
+DEFAULT_CONTEXT_LENGTH = 2048
 
 def clear_screen():
     """Clear the terminal screen."""
@@ -45,40 +69,47 @@ def check_ollama_installed():
         return False
 
 def install_ollama():
-    """Install Ollama if not already installed."""
-    console.print("[bold yellow]Installing Ollama...[/bold yellow]")
-    try:
-        subprocess.run("curl -fsSL https://ollama.com/install.sh | sh", 
-                      shell=True, 
-                      check=True)
-        console.print("[bold green]Ollama installed successfully![/bold green]")
-        return True
-    except subprocess.CalledProcessError:
-        console.print("[bold red]Failed to install Ollama.[/bold red]")
-        return False
+    """Show instructions for installing Ollama on macOS."""
+    console.print("[bold yellow]Ollama needs to be installed manually on macOS.[/bold yellow]")
+    console.print(Panel("""
+[bold]Installation Options for macOS:[/bold]
 
-def check_model_exists():
-    """Check if the Llama 2 model is already pulled."""
+1. Download from the official website:
+   Visit https://ollama.com/download and download the macOS app
+
+2. Install via Homebrew (recommended):
+   brew install ollama
+
+[bold]After installing:[/bold]
+- Launch the Ollama app from your Applications folder
+- Or if installed via Homebrew, run: ollama serve
+
+Once Ollama is running, restart this script.
+    """, title="Ollama Installation Instructions"))
+    return False
+
+def check_model_exists(model_name):
+    """Check if the specified model is already pulled."""
     try:
         models = ollama.list()
         for model in models['models']:
-            if model['name'] == MODEL_NAME:
+            if model['name'] == model_name:
                 return True
         return False
     except Exception as e:
         console.print(f"[bold red]Error checking models: {e}[/bold red]")
         return False
 
-def pull_model():
-    """Pull the Llama 2 model."""
-    console.print(f"[bold yellow]Pulling {MODEL_NAME} model... This may take a while.[/bold yellow]")
+def pull_model(model_name):
+    """Pull the specified model."""
+    console.print(f"[bold yellow]Pulling {model_name} model... This may take a while.[/bold yellow]")
     try:
         # Stream progress to console
-        for progress in ollama.pull(MODEL_NAME, stream=True):
+        for progress in ollama.pull(model_name, stream=True):
             if 'completed' in progress and 'total' in progress:
                 percentage = (progress['completed'] / progress['total']) * 100
                 console.print(f"Download progress: [bold green]{percentage:.2f}%[/bold green]", end="\r")
-        console.print(f"\n[bold green]{MODEL_NAME} model pulled successfully![/bold green]")
+        console.print(f"\n[bold green]{model_name} model pulled successfully![/bold green]")
         return True
     except Exception as e:
         console.print(f"[bold red]Error pulling model: {e}[/bold red]")
@@ -141,10 +172,11 @@ def save_conversation(conversation_history):
     console.print(f"[bold green]Conversation saved to {filename}[/bold green]")
 
 def chat_with_model(settings):
-    """Start a conversation with the Llama 2 model."""
+    """Start a conversation with the selected model."""
     conversation_history = []
+    model_name = settings['model']
     
-    console.print("\n[bold green]Starting conversation with Llama 2. Type 'exit' to end.[/bold green]")
+    console.print(f"\n[bold green]Starting conversation with {model_name}. Type 'exit' to end.[/bold green]")
     console.print("[bold green]Type 'save' to save the conversation history.[/bold green]")
     console.rule()
     
@@ -175,7 +207,7 @@ def chat_with_model(settings):
             
             # Stream the response
             for chunk in ollama.chat(
-                model=MODEL_NAME,
+                model=model_name,
                 messages=conversation_history,
                 stream=True,
                 options=settings
@@ -195,6 +227,35 @@ def chat_with_model(settings):
     
     return conversation_history
 
+def select_model():
+    """Display model selection menu and return the chosen model."""
+    console.print("\n[bold]Model Selection[/bold]")
+    console.rule()
+    
+    console.print("[yellow]Choose a model based on your hardware capabilities:[/yellow]\n")
+    
+    # Display model options
+    for i, (key, model) in enumerate(MODEL_OPTIONS.items(), 1):
+        console.print(f"[bold cyan]{i}.[/bold cyan] [bold]{model['name']}[/bold]")
+        console.print(f"   {model['description']}")
+    
+    # Get user choice
+    choice = 0
+    while choice < 1 or choice > len(MODEL_OPTIONS):
+        try:
+            choice_input = Prompt.ask("\nSelect a model (1-5)", default="1")
+            choice = int(choice_input)
+            if choice < 1 or choice > len(MODEL_OPTIONS):
+                console.print("[red]Invalid choice. Please select a number between 1 and 5.[/red]")
+        except ValueError:
+            console.print("[red]Please enter a valid number.[/red]")
+    
+    # Get the selected model
+    selected_model = list(MODEL_OPTIONS.values())[choice-1]['name']
+    console.print(f"\n[bold green]Selected model: {selected_model}[/bold green]")
+    
+    return selected_model
+
 def main_menu():
     """Display the main menu and handle user selection."""
     display_header()
@@ -210,21 +271,25 @@ def main_menu():
             console.print("[bold yellow]Ollama is required to run this application. Exiting...[/bold yellow]")
             return
     
+    # Select model
+    selected_model = select_model()
+    
     # Check if model exists and pull if necessary
-    if not check_model_exists():
-        console.print(f"[yellow]The {MODEL_NAME} model is not downloaded yet.[/yellow]")
-        if Confirm.ask(f"Do you want to pull the {MODEL_NAME} model now?"):
-            if not pull_model():
+    if not check_model_exists(selected_model):
+        console.print(f"[yellow]The {selected_model} model is not downloaded yet.[/yellow]")
+        if Confirm.ask(f"Do you want to pull the {selected_model} model now?"):
+            if not pull_model(selected_model):
                 console.print("[bold red]Failed to pull the model. Please try again later.[/bold red]")
                 return
         else:
             console.print("[bold yellow]The model is required to run this application. Exiting...[/bold yellow]")
             return
     else:
-        console.print(f"[bold green]{MODEL_NAME} model is already downloaded.[/bold green]")
+        console.print(f"[bold green]{selected_model} model is already downloaded.[/bold green]")
     
     # Get conversation settings
     settings = get_conversation_settings()
+    settings['model'] = selected_model
     
     # Start conversation
     conversation_history = chat_with_model(settings)
