@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block title %}Ollama Studies - Home{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow-lg">
+            <div class="card-body">
+                <h1 class="card-title text-center mb-4">Welcome to Ollama Studies</h1>
+                <p class="lead text-center">
+                    A web interface to interact with various AI models locally using Ollama
+                </p>
+                
+                {% if not is_ollama_installed %}
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading">Ollama Not Detected!</h4>
+                    <p>Ollama needs to be installed and running on your system.</p>
+                    <hr>
+                    <p class="mb-0"><strong>Installation Options for macOS:</strong></p>
+                    <ul>
+                        <li>Download from the <a href="https://ollama.com/download" target="_blank">official website</a></li>
+                        <li>Or install via Homebrew: <code>brew install ollama</code></li>
+                    </ul>
+                    <p><strong>After installing:</strong></p>
+                    <ul>
+                        <li>Launch the Ollama app from your Applications folder, or</li>
+                        <li>If installed via Homebrew, run: <code>ollama serve</code></li>
+                    </ul>
+                </div>
+                {% else %}
+                <div class="row mb-4 mt-4 text-center">
+                    <div class="col-md-6">
+                        <div class="card mb-3 h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Start a Conversation</h5>
+                                <p class="card-text">Chat with an AI model using your preferred settings</p>
+                                <a href="{{ url_for('settings') }}" class="btn btn-primary">Start Chat</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="card mb-3 h-100">
+                            <div class="card-body">
+                                <h5 class="card-title">Train a Custom Model</h5>
+                                <p class="card-text">Create a model trained on your own text or documentation</p>
+                                <a href="{{ url_for('train') }}" class="btn btn-success">Train Model</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                
+                <h3 class="mt-4">Features</h3>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item">Use multiple AI models locally on your machine</li>
+                    <li class="list-group-item">Fine-tune conversation parameters (temperature, context length)</li>
+                    <li class="list-group-item">Train models on custom text or documentation</li>
+                    <li class="list-group-item">Save conversation history for later reference</li>
+                </ul>
+                
+                <h3 class="mt-4">Available Models</h3>
+                <div class="list-group">
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">TinyLlama (1.1B)</h5>
+                            <span class="badge bg-success">Very Light</span>
+                        </div>
+                        <p class="mb-1">Very lightweight model, minimal resource usage</p>
+                    </div>
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Gemma 2B</h5>
+                            <span class="badge bg-success">Light</span>
+                        </div>
+                        <p class="mb-1">Google's lightweight model, good performance/resource ratio</p>
+                    </div>
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Phi-2 (2.7B)</h5>
+                            <span class="badge bg-info">Medium</span>
+                        </div>
+                        <p class="mb-1">Microsoft's small but capable model</p>
+                    </div>
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Mistral (7B)</h5>
+                            <span class="badge bg-warning">Heavy</span>
+                        </div>
+                        <p class="mb-1">Good performance, moderate resource usage</p>
+                    </div>
+                    <div class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h5 class="mb-1">Llama 2 (7B)</h5>
+                            <span class="badge bg-danger">Very Heavy</span>
+                        </div>
+                        <p class="mb-1">Full-size model, high resource usage</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

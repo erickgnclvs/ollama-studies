@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}Train Model - Ollama Studies{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h2 class="mb-0">Train Custom Model</h2>
+            </div>
+            <div class="card-body">
+                {% if success is not none %}
+                    {% if success %}
+                        <div class="alert alert-success">
+                            <h5><i class="bi bi-check-circle-fill me-2"></i>Model Training Successful!</h5>
+                            <p>{{ message }}</p>
+                            <hr>
+                            <p class="mb-0">
+                                <a href="{{ url_for('settings') }}" class="btn btn-sm btn-outline-success">Go to Settings to Chat with Your Model</a>
+                            </p>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-danger">
+                            <h5><i class="bi bi-exclamation-triangle-fill me-2"></i>Training Failed</h5>
+                            <p>{{ message }}</p>
+                            <hr>
+                            <p class="mb-0">Please check the error message above and try again.</p>
+                        </div>
+                    {% endif %}
+                {% endif %}
+                
+                <div class="alert alert-info">
+                    <h5>Train a model on your own text content</h5>
+                    <p>You can paste documentation, code comments, project descriptions, or any other text to create a model that's specialized in that knowledge.</p>
+                </div>
+                
+                <form method="post" action="{{ url_for('train') }}">
+                    {{ form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.model_name.id }}" class="form-label">{{ form.model_name.label }}</label>
+                        <input type="text" class="form-control" id="{{ form.model_name.id }}" name="{{ form.model_name.name }}" required>
+                        <div class="form-text">Use only lowercase letters, numbers, and hyphens. Example: "my-python-docs"</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.base_model.id }}" class="form-label">{{ form.base_model.label }}</label>
+                        <select class="form-select" id="{{ form.base_model.id }}" name="{{ form.base_model.name }}" required>
+                            {% for value, label in form.base_model.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">The foundation model to fine-tune. Lighter models train faster but may have less knowledge.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.training_text.id }}" class="form-label">{{ form.training_text.label }}</label>
+                        <textarea class="form-control" id="{{ form.training_text.id }}" name="{{ form.training_text.name }}" rows="12" required></textarea>
+                        <div class="form-text">Paste the text you want the model to learn from. The more focused and relevant the text, the better the model will perform.</div>
+                    </div>
+                    
+                    <div class="text-center">
+                        {{ form.submit(class="btn btn-success") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="card mt-4">
+            <div class="card-header bg-light">
+                <h4 class="mb-0">Training Tips</h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5>Good Content for Training</h5>
+                        <ul>
+                            <li>Project documentation</li>
+                            <li>API reference guides</li>
+                            <li>Technical specifications</li>
+                            <li>User manuals</li>
+                            <li>Knowledge base articles</li>
+                            <li>Code comments and README files</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h5>Best Practices</h5>
+                        <ul>
+                            <li>Use clear, well-structured text</li>
+                            <li>Focus on a specific topic or domain</li>
+                            <li>Include examples and use cases</li>
+                            <li>Lighter models train faster but may have less general knowledge</li>
+                            <li>Avoid training on sensitive or private information</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

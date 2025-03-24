@@ -1,0 +1,138 @@
+{% extends 'base.html' %}
+
+{% block title %}Conversation Settings - Ollama Studies{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-primary text-white">
+                <h2 class="mb-0">Conversation Settings</h2>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('settings') }}">
+                    {{ form.csrf_token }}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.model.id }}" class="form-label">{{ form.model.label }}</label>
+                        <select id="{{ form.model.id }}" name="{{ form.model.name }}" class="form-select" required>
+                            {% for value, label in form.model.choices %}
+                                <option value="{{ value }}">{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                        <div id="modelStatus" class="form-text">Checking if model is available...</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.temperature.id }}" class="form-label">{{ form.temperature.label }}</label>
+                        <input type="range" class="form-range" min="0" max="1" step="0.1" id="{{ form.temperature.id }}" name="{{ form.temperature.name }}" value="{{ form.temperature.default }}" oninput="tempOutput.value = this.value">
+                        <output id="tempOutput">{{ form.temperature.default }}</output>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.context_length.id }}" class="form-label">{{ form.context_length.label }}</label>
+                        <input type="number" class="form-control" id="{{ form.context_length.id }}" name="{{ form.context_length.name }}" value="{{ form.context_length.default }}" min="0" max="8192">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.system_prompt.id }}" class="form-label">{{ form.system_prompt.label }}</label>
+                        <textarea class="form-control" id="{{ form.system_prompt.id }}" name="{{ form.system_prompt.name }}" rows="3">{{ form.system_prompt.default }}</textarea>
+                        <div class="form-text">Instructions that define how the AI assistant should behave</div>
+                    </div>
+                    
+                    <div id="modelPullSection" class="d-none mb-3">
+                        <div class="alert alert-warning">
+                            <p>The selected model is not downloaded yet.</p>
+                            <button type="button" id="pullModelBtn" class="btn btn-warning">Pull Model</button>
+                            <div id="pullProgress" class="progress mt-2 d-none">
+                                <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        {{ form.submit(class="btn btn-primary") }}
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Check if selected model exists
+    function checkModelExists(modelName) {
+        // Skip the API call if model name is empty or undefined
+        if (!modelName || modelName.trim() === '') {
+            document.getElementById('modelStatus').innerHTML = `<span class="text-warning">Please select a valid model</span>`;
+            document.getElementById('modelPullSection').classList.add('d-none');
+            return;
+        }
+        
+        fetch(`/check_model/${modelName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.exists) {
+                    document.getElementById('modelStatus').innerHTML = `<span class="text-success">Model is available</span>`;
+                    document.getElementById('modelPullSection').classList.add('d-none');
+                } else {
+                    document.getElementById('modelStatus').innerHTML = `<span class="text-warning">Model needs to be downloaded</span>`;
+                    document.getElementById('modelPullSection').classList.remove('d-none');
+                }
+            })
+            .catch(error => {
+                console.error('Error checking model:', error);
+                document.getElementById('modelStatus').innerHTML = `<span class="text-danger">Error checking model status</span>`;
+            });
+    }
+    
+    // Pull model when button clicked
+    document.getElementById('pullModelBtn').addEventListener('click', function() {
+        const modelSelect = document.getElementById('{{ form.model.id }}');
+        const modelName = modelSelect.value;
+        const progressBar = document.getElementById('pullProgress');
+        const progressBarInner = progressBar.querySelector('.progress-bar');
+        
+        this.disabled = true;
+        this.innerText = 'Downloading...';
+        progressBar.classList.remove('d-none');
+        
+        // Start the download
+        fetch(`/pull_model/${modelName}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('modelStatus').innerHTML = `<span class="text-success">Model is now available</span>`;
+                    document.getElementById('modelPullSection').classList.add('d-none');
+                } else {
+                    document.getElementById('modelStatus').innerHTML = `<span class="text-danger">Failed to download model</span>`;
+                    this.innerText = 'Try Again';
+                    this.disabled = false;
+                }
+            });
+            
+        // Simulate progress (since we don't have real-time progress in the API)
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 5;
+            if (progress > 95) {
+                clearInterval(interval);
+            } else {
+                progressBarInner.style.width = `${progress}%`;
+            }
+        }, 1000);
+    });
+    
+    // Check model status when page loads and when selection changes
+    document.addEventListener('DOMContentLoaded', function() {
+        const modelSelect = document.getElementById('{{ form.model.id }}');
+        checkModelExists(modelSelect.value);
+        
+        modelSelect.addEventListener('change', function() {
+            checkModelExists(this.value);
+        });
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,2 @@
+FROM tinyllama
+SYSTEM You are an AI assistant that specializes in the information provided in your training.

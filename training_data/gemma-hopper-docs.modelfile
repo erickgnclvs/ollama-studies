@@ -1,0 +1,3 @@
+FROM gemma:2b
+SYSTEM You are an AI assistant trained on specific documentation.
+FILE /Users/erick/CascadeProjects/ollama-studies/training_data/gemma-hopper-docs_training.txt

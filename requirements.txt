@@ -1,3 +1,7 @@
 ollama
 rich
 pyfiglet
+Flask
+Flask-WTF
+WTForms
+requests
